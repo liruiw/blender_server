@@ -35,7 +35,7 @@ from pydrake.systems.framework import (
 from pydrake.multibody.plant import ContactResults
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+# from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
@@ -45,11 +45,12 @@ from pydrake.systems.primitives import (
 from pydrake.trajectories import PiecewisePolynomial
 
 
-from blender_server.blender_server_interface.blender_server_interface import (
+from  blender_server_interface.blender_server_interface import (
     BlenderServerInterface)
 
 import warnings
 from pydrake.common.deprecation import DrakeDeprecationWarning
+import IPython
 
 
 class BoundingBoxBundle(object):
@@ -131,6 +132,7 @@ class BlenderLabelCamera(LeafSystem):
                  scene_graph,
                  zmq_url="default",
                  draw_period=0.033333,
+                 render_samples=20,
                  camera_tfs=[RigidTransform()],
                  global_transform=RigidTransform(),
                  out_prefix=None,
@@ -161,7 +163,7 @@ class BlenderLabelCamera(LeafSystem):
         """
         raise NotImplementedError("Needs to be updated to use QueryObject.")
         LeafSystem.__init__(self)
-
+        self.render_samples = render_samples
         if out_prefix is not None:
             self.out_prefix = out_prefix
         else:
@@ -362,6 +364,7 @@ class BlenderLabelCamera(LeafSystem):
 
         for frame_i in range(pose_bundle.get_num_poses()):
             link_name = pose_bundle.get_name(frame_i)
+            print("update pose for name:", link_name)
             [source_name, frame_name] = self._parse_name(link_name)
             model_id = pose_bundle.get_model_instance_id(frame_i)
             # pose_matrix = pose_bundle.get_pose(frame_i)
@@ -388,6 +391,7 @@ class BlenderLabelCamera(LeafSystem):
         for i in range(len(self.camera_tfs)):
             out_filepath = self.out_prefix + "%02d_%08d_label.bmp" % (
                 i, self.current_publish_num)
+            print("out_filepath:", out_filepath)
             im = self.bsi.render_image(
                 "cam_%d" % i, filepath=out_filepath)
             if self.show_figure:
@@ -426,7 +430,8 @@ class BlenderColorCamera(LeafSystem):
                  save_scene=False,
                  resolution=[640, 480],
                  cam_fov=(np.pi/2.),
-                 raytraced=True):
+                 raytraced=True,
+                 render_samples=20):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -450,7 +455,7 @@ class BlenderColorCamera(LeafSystem):
               Blender server.
         """
         LeafSystem.__init__(self)
-
+        self.render_samples = render_samples
         if out_prefix is not None:
             self.out_prefix = out_prefix
         else:
@@ -528,7 +533,8 @@ class BlenderColorCamera(LeafSystem):
         # Load all the elements over on the Blender side.
 
         inspector = self._scene_graph.model_inspector()
-
+        print("==================================================")
+        print("loading object")
         self._dynamic_frames = []
         for frame_id in inspector.GetAllFrameIds():
             count = inspector.NumGeometriesForFrameWithRole(
@@ -540,7 +546,7 @@ class BlenderColorCamera(LeafSystem):
             else:
                 name = (inspector.GetOwningSourceName(frame_id) + "::"
                         + inspector.GetName(frame_id))
-
+            print(name)
             tfs = []
 
             for j, g_id in enumerate(inspector.GetGeometries(frame_id, self._role)):
@@ -658,14 +664,20 @@ class BlenderColorCamera(LeafSystem):
                 # is registered.
                 do_load_geom()
 
+
             if frame_id != inspector.world_frame_id():
                 self._dynamic_frames.append({
                     "id": frame_id,
                     "name": name,
                     "local_tfs": tfs
                 })
+        print("==================================================")
 
+        # IPython.embed()
+        print("==================================================")
+        print("configured rendering")
         for i, camera_tf in enumerate(self.camera_tfs):
+            # camera_tf = camera_tf.inverse()
             camera_tf_post = self.global_transform.multiply(camera_tf)
             self.bsi.send_remote_call(
                 "register_camera",
@@ -679,14 +691,15 @@ class BlenderColorCamera(LeafSystem):
                 camera_name='cam_%d' % i,
                 resolution=self._resolution,
                 file_format="JPEG",
-                taa_render_samples=20,
+                taa_render_samples=self.render_samples,
                 cycles=self.raytraced)
 
         if self.env_map_path:
             self.bsi.send_remote_call(
                 "set_environment_map",
                 path=self.env_map_path)
-    
+        print("==================================================")
+
     def DoPublish(self, context, event):
         # TODO(russt): Change this to declare a periodic event with a
         # callback instead of overriding _DoPublish, pending #9992.
@@ -702,6 +715,8 @@ class BlenderColorCamera(LeafSystem):
         else:
             bbox_bundle = None
 
+        print("inside publish")
+        # IPython.embed()
         if bbox_bundle:
             bbox_bundle = bbox_bundle.get_value()
             for k in range(bbox_bundle.get_num_bboxes()):
@@ -766,6 +781,7 @@ class BlenderColorCamera(LeafSystem):
         # print('pose_bundle type', type(pose_bundle))
         for frame in self._dynamic_frames:
             name = frame["name"]
+            print(name)
             X_WF = query_object.GetPoseInWorld(frame["id"])
             for j, tf in enumerate(frame["local_tfs"]):
                 geom_WF = self.global_transform.multiply(X_WF.multiply(tf))

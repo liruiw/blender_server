@@ -3,3 +3,4 @@ build
 out
 *.pyc
 *.mp4
+outputs
