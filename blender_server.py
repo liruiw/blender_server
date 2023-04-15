@@ -35,8 +35,10 @@ if __name__ == '__main__':
         port = "5556"
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:%s" % port)
+    # socket.unbind("tcp://*:%s" % port)
 
+    socket.bind("tcp://*:%s" % port)
+    print("tcp://*:%s" % port)
     while True:
         try:
             msg = socket.recv_json()
@@ -51,7 +53,8 @@ if __name__ == '__main__':
             if cmd_name == "render_and_return_image_bytes":
                 socket.send(ret)
             else:
-                socket.send(b"Success")
+                pass
+                # socket.send(b"Success")
 
         except zmq.ZMQError:
             pass

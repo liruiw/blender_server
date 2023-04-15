@@ -99,7 +99,7 @@ class BoundingBoxBundleTestSource(LeafSystem):
 
         self.iter = 0
         self.set_name('dummy bbox publisher')
-        self.DeclarePeriodicPublish(0.03333, 0.0)
+        self.DeclarePeriodicPublishNoHandler(0.03333, 0.0)
 
         self.bbox_bundle_output_port = \
             self.DeclareAbstractOutputPort(
@@ -170,7 +170,7 @@ class BlenderLabelCamera(LeafSystem):
             self.out_prefix = "/tmp/drake_blender_vis_labels_"
         self.current_publish_num = 0
         self.set_name('blender_label_camera')
-        self.DeclarePeriodicPublish(draw_period, 0.)
+        self.DeclarePeriodicPublishNoHandler(draw_period, 0.)
         self.draw_period = draw_period
         self.save_scene = save_scene
 
@@ -364,7 +364,7 @@ class BlenderLabelCamera(LeafSystem):
 
         for frame_i in range(pose_bundle.get_num_poses()):
             link_name = pose_bundle.get_name(frame_i)
-            print("update pose for name:", link_name)
+            # print("update pose for name:", link_name)
             [source_name, frame_name] = self._parse_name(link_name)
             model_id = pose_bundle.get_model_instance_id(frame_i)
             # pose_matrix = pose_bundle.get_pose(frame_i)
@@ -462,7 +462,7 @@ class BlenderColorCamera(LeafSystem):
             self.out_prefix = "/tmp/drake_blender_vis_"
         self.current_publish_num = 0
         self.set_name('blender_color_camera')
-        self.DeclarePeriodicPublish(draw_period, 0.)
+        self.DeclarePeriodicPublishNoHandler(draw_period, 0.)
         self.draw_period = draw_period
         self.save_scene = save_scene
         self.raytraced = raytraced
@@ -546,7 +546,7 @@ class BlenderColorCamera(LeafSystem):
             else:
                 name = (inspector.GetOwningSourceName(frame_id) + "::"
                         + inspector.GetName(frame_id))
-            print(name)
+            # print(name)
             tfs = []
 
             for j, g_id in enumerate(inspector.GetGeometries(frame_id, self._role)):
@@ -690,7 +690,7 @@ class BlenderColorCamera(LeafSystem):
                 "configure_rendering",
                 camera_name='cam_%d' % i,
                 resolution=self._resolution,
-                file_format="JPEG",
+                file_format="PNG", # JPEG
                 taa_render_samples=self.render_samples,
                 cycles=self.raytraced)
 
@@ -715,7 +715,7 @@ class BlenderColorCamera(LeafSystem):
         else:
             bbox_bundle = None
 
-        print("inside publish")
+        # print("inside publish")
         # IPython.embed()
         if bbox_bundle:
             bbox_bundle = bbox_bundle.get_value()
@@ -781,7 +781,7 @@ class BlenderColorCamera(LeafSystem):
         # print('pose_bundle type', type(pose_bundle))
         for frame in self._dynamic_frames:
             name = frame["name"]
-            print(name)
+            # print(name)
             X_WF = query_object.GetPoseInWorld(frame["id"])
             for j, tf in enumerate(frame["local_tfs"]):
                 geom_WF = self.global_transform.multiply(X_WF.multiply(tf))

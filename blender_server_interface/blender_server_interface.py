@@ -15,6 +15,7 @@ class BlenderServerInterface():
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(self.zmq_url)
+        self.socket.setsockopt(zmq.SNDTIMEO, 5)
 
     def _construct_remote_call_json(self, func, **kwargs):
         return {
@@ -27,11 +28,13 @@ class BlenderServerInterface():
         `func` with argument dictionary `**kwargs`. Returns
         whether the requested function was executed successfully
         or not. '''
+
         self.socket.send_json(
             self._construct_remote_call_json(
                 func, **kwargs))
         resp = self.socket.recv()
         success = resp == "Success"
+
         if not success:
             print(resp)
         return success

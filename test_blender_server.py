@@ -24,9 +24,12 @@ if __name__ == '__main__':
     else:
         port = "5556"
 
-    bsi = BlenderServerInterface(zmq_url="tcp://127.0.0.1:%s" % port)
+    bsi = BlenderServerInterface(zmq_url="tcp://127.0.0.1:%s" % port) # tcp://127.0.0.1
+    print("init")
+    print("tcp://127.0.0.1:%s" % port)
 
-    bsi.send_remote_call("initialize_scene")
+    s = bsi.send_remote_call("initialize_scene")
+    print("init")
 
     # Setup the background of the scene by loading an environment map.
     env_map_path = "./data/env_maps/aerodynamics_workshop_4k.hdr"
@@ -58,6 +61,9 @@ if __name__ == '__main__':
             "./data/test_objs/ycb/035_power_drill/google_16k/"
     ]
     objs = []
+
+    print("init")
+
     for i, obj_base_path in enumerate(object_classes):
         tex_path = obj_base_path + "texture_map.png"
         bsi.send_remote_call(
@@ -92,6 +98,8 @@ if __name__ == '__main__':
 
     # For a bunch of frames, randomize the object
     # poses and render the scene.
+    print("gen")
+
     plt.figure()
     for i in range(1000):
         bsi.send_remote_call("save_current_scene", path="./out/save.blend")
